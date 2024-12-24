@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  limiter-proxy-service:
+    image: arobingood/pivaas-limiter-proxy-service:v1.0.2
+    ports:
+      - "1337:1337"
+    environment:
+      SERVER__LISTEN__HOST: "0.0.0.0"
+      COMPUTE_SERVICE__PROTOCOL: "http"
+      COMPUTE_SERVICE__HOSTNAME: "compute-service"
+      COMPUTE_SERVICE__PORT: "1338"
+    deploy:
+      replicas: 1
+    healthcheck:
+      test: curl -sS http://0.0.0.0:1337/health || echo 1
+      interval: 5s
+      timeout: 1s
+      retries: 3
+
+  compute-service:
+    image: arobingood/pivaas-compute-service:v1.0.4
+    ports:
+      - "1338:1338"
+    environment:
+      SERVER__LISTEN__HOST: "0.0.0.0"
+    deploy:
+      replicas: 3
+    healthcheck:
+      test: curl -sS http://0.0.0.0:1338/health || echo 1
+      interval: 5s
+      timeout: 1s
+      retries: 3
+
+  ingress:
+    image: nginx:latest
+    ports:
+      - 8080:80
+    volumes:
+      - /nginx.conf:/etc/nginx/nginx.conf:ro
